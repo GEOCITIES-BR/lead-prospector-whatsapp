@@ -1,0 +1,61 @@
+# Monitoring stack — Prometheus + Grafana + backup
+# Usage: docker compose -f docker/docker-compose.prod.yml -f docker/docker-compose.monitoring.yml up -d
+name: lead-prospector-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: lead-prospector-prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: lead-prospector-grafana
+    ports:
+      - '3001:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: ''
+    volumes:
+      - ./docker/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./docker/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine
+    container_name: lead-prospector-backup
+    entrypoint: |
+      sh -c '
+        echo "0 3 * * * /backup/backup.sh" > /etc/crontabs/root
+        crond -f
+      '
+    volumes:
+      - ./scripts/backup.sh:/backup/backup.sh:ro
+      - ./docker/postgres/backup:/backup
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-lead_prospector}
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: lead-prospector-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 3600 --cleanup
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

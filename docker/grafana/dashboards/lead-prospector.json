@@ -1,0 +1,49 @@
+{
+  "title": "Lead Prospector",
+  "version": 1,
+  "panels": [
+    {
+      "title": "HTTP Requests Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_count[1m])",
+          "legendFormat": "{{ route }}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "HTTP Error Rate (5xx)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_count{status_code=~\"5..\"}[1m])",
+          "legendFormat": "{{ route }}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "Request Duration (P95)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "title": "Active Leads",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "http_request_duration_seconds_count{route=\"/api/dashboard/overview\"}"
+        }
+      ],
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 8 }
+    }
+  ]
+}

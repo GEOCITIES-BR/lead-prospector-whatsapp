@@ -1,0 +1,71 @@
+{
+  "name": "Executar Campanha Agendada",
+  "nodes": [
+    {
+      "id": "eeeeeeee-ffff-aaaa-bbbb-cccccccccccc",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "hours", "hoursInterval": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ffffffff-aaaa-bbbb-cccc-dddddddddddd",
+      "name": "List Campaigns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:3000/api/campaigns",
+        "authentication": "none",
+        "sendBody": false,
+        "queryParameters": {
+          "parameters": [
+            { "name": "status", "value": "active" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5",
+      "name": "Loop Campanhas",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [760, 300],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "b2b2b2b2-c3c3-d4d4-e5e5-f6f6f6f6f6f6",
+      "name": "Executar Campanha",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1020, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/campaigns/{{ $json.id }}/execute",
+        "authentication": "none",
+        "sendBody": false,
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[ { "node": "List Campaigns", "type": "main", "index": 0 } ]] },
+    "List Campaigns": { "main": [[ { "node": "Loop Campanhas", "type": "main", "index": 0 } ]] },
+    "Loop Campanhas": { "main": [[ { "node": "Executar Campanha", "type": "main", "index": 0 } ]] }
+  },
+  "settings": { "timezone": "America/Sao_Paulo" },
+  "staticData": null,
+  "tags": ["campaign", "schedule"]
+}

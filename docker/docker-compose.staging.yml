@@ -1,0 +1,99 @@
+# Staging stack — same as production but with exposed ports for debugging
+# Usage: docker compose -f docker/docker-compose.staging.yml up -d
+name: lead-prospector-staging
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    image: lead-prospector-app:staging
+    container_name: lead-prospector-app-staging
+    ports:
+      - '3001:3000'
+    env_file:
+      - .env.staging
+    environment:
+      NODE_ENV: production
+      LOG_PRETTY: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: lead-prospector-postgres-staging
+    ports:
+      - '5433:5432'
+    env_file:
+      - .env.staging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-lead_prospector_staging}
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: lead-prospector-redis-staging
+    ports:
+      - '6378:6379'
+    volumes:
+      - redis_staging_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  waha:
+    image: devlike/whatsapp-http-api:latest
+    container_name: lead-prospector-waha-staging
+    ports:
+      - '3003:3002'
+    environment:
+      WHATSAPP_API_KEY: ${WAHA_API_KEY:-change-me-staging}
+    volumes:
+      - waha_staging_data:/app/.sections
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: lead-prospector-n8n-staging
+    ports:
+      - '5679:5678'
+    environment:
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-}
+      N8N_BASIC_AUTH_ACTIVE: 'true'
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-staging}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5679/}
+    volumes:
+      - n8n_staging_data:/home/node/.n8n
+      - ./n8n-workflows:/workflows
+    restart: unless-stopped
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+  waha_staging_data:
+  n8n_staging_data:

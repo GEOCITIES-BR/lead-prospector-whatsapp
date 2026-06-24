@@ -1,0 +1,10 @@
+# Sobrescreva para desenvolvimento local
+# Copie para docker-compose.override.yml (gitignored)
+services:
+  app:
+    build:
+      dockerfile: docker/Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npx tsx watch src/api/server.ts

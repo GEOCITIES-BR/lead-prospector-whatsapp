@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.nyc_output/
+
+# Docker
+docker/data/
+docker/postgres/data/
+docker/redis/data/
+
+# Prisma
+prisma/migrations/
+
+# Temp
+tmp/
+temp/
+
+# n8n
+n8n/data/

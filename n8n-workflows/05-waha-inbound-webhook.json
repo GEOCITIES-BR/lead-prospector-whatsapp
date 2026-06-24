@@ -1,0 +1,99 @@
+{
+  "name": "WAHA Webhook Receiver (Mensagens Recebidas)",
+  "nodes": [
+    {
+      "id": "c3c3c3c3-d4d4-e5e5-f6f6-a7a7a7a7a7a7",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "path": "waha-inbound",
+        "responseMode": "responseNode",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "webhookId": "waha-inbound"
+    },
+    {
+      "id": "d4d4d4d4-e5e5-f6f6-a7a7-b8b8b8b8b8b8",
+      "name": "IF é texto",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "if-condition-3",
+              "leftValue": "={{ $json.body.messageType }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e5e5e5e5-f6f6-a7a7-b8b8-c9c9c9c9c9c9",
+      "name": "Responder automaticamente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/n8n/send-message",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "leadId", "value": "", "parameterType": "string" },
+            { "name": "conteudo", "value": "Obrigado pelo contato! Em breve retornaremos.", "parameterType": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f6f6f6f6-a7a7-b8b8-c9c9-d0d0d0d0d0d0",
+      "name": "Ignorar (não texto)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [760, 400],
+      "parameters": {}
+    },
+    {
+      "id": "a7a7a7a7-b8b8-c9c9-d0d0-e1e1e1e1e1e1",
+      "name": "Resposta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1020, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"received\":true}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[ { "node": "IF é texto", "type": "main", "index": 0 } ]] },
+    "IF é texto": {
+      "main": [
+        [ { "node": "Responder automaticamente", "type": "main", "index": 0 } ],
+        [ { "node": "Ignorar (não texto)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Responder automaticamente": { "main": [[ { "node": "Resposta Webhook", "type": "main", "index": 0 } ]] },
+    "Ignorar (não texto)": { "main": [[ { "node": "Resposta Webhook", "type": "main", "index": 0 } ]] }
+  },
+  "settings": { "timezone": "America/Sao_Paulo" },
+  "staticData": null,
+  "tags": ["whatsapp", "webhook"]
+}

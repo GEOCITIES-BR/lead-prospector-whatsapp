@@ -1,0 +1,76 @@
+{
+  "name": "Webhook → Criar Lead → Enriquecer",
+  "nodes": [
+    {
+      "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "path": "lead-prospector/create-lead",
+        "responseMode": "responseNode",
+        "options": {},
+        "httpMethod": "POST"
+      },
+      "webhookId": "lead-prospector-create-lead"
+    },
+    {
+      "id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+      "name": "Criar Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/n8n/create-lead",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "nome", "value": "={{ $json.body.nome }}", "parameterType": "string" },
+            { "name": "empresa", "value": "={{ $json.body.empresa }}", "parameterType": "string" },
+            { "name": "cargo", "value": "={{ $json.body.cargo }}", "parameterType": "string" },
+            { "name": "telefone", "value": "={{ $json.body.telefone }}", "parameterType": "string" },
+            { "name": "email", "value": "={{ $json.body.email }}", "parameterType": "string" },
+            { "name": "origem", "value": "={{ $json.body.origem || 'webhook' }}", "parameterType": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa",
+      "name": "Enriquecer Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/enrich/lead/{{ $json.data.id }}",
+        "authentication": "none",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "dddddddd-eeee-ffff-aaaa-bbbbbbbbbbbb",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1020, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[ { "node": "Criar Lead", "type": "main", "index": 0 } ]] },
+    "Criar Lead": { "main": [[ { "node": "Enriquecer Lead", "type": "main", "index": 0 } ]] },
+    "Enriquecer Lead": { "main": [[ { "node": "Resposta", "type": "main", "index": 0 } ]] }
+  },
+  "settings": { "timezone": "America/Sao_Paulo" },
+  "staticData": null,
+  "tags": ["webhook", "leads"]
+}

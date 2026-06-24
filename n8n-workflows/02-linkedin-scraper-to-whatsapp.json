@@ -1,0 +1,117 @@
+{
+  "name": "LinkedIn Scraper → Enriquecer → WhatsApp",
+  "nodes": [
+    {
+      "id": "11111111-2222-3333-4444-555555555555",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {}
+    },
+    {
+      "id": "22222222-3333-4444-5555-666666666666",
+      "name": "Scrape LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/n8n/scrape-linkedin",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "keyword", "value": "={{ $json.keyword }}", "parameterType": "string" },
+            { "name": "location", "value": "={{ $json.location }}", "parameterType": "string" },
+            { "name": "maxResults", "value": "={{ $json.maxResults }}", "parameterType": "number" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "33333333-4444-5555-6666-777777777777",
+      "name": "Enriquecer Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/enrich/lead/{{ $json.data[0].id }}",
+        "authentication": "none",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "44444444-5555-6666-7777-888888888888",
+      "name": "IF Score > 60",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1020, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "if-condition-2",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "60",
+              "operator": {
+                "type": "number",
+                "operation": "largerEqual"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "55555555-6666-7777-8888-999999999999",
+      "name": "Send WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1280, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/n8n/send-message",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "leadId", "value": "={{ $json.leadId }}", "parameterType": "string" },
+            { "name": "conteudo", "value": "Olá! Vi seu perfil no LinkedIn e temos uma oportunidade.", "parameterType": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "66666666-7777-8888-9999-000000000000",
+      "name": "Lead ignorado (score baixo)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1280, 400],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[ { "node": "Scrape LinkedIn", "type": "main", "index": 0 } ]] },
+    "Scrape LinkedIn": { "main": [[ { "node": "Enriquecer Leads", "type": "main", "index": 0 } ]] },
+    "Enriquecer Leads": { "main": [[ { "node": "IF Score > 60", "type": "main", "index": 0 } ]] },
+    "IF Score > 60": {
+      "main": [
+        [ { "node": "Send WhatsApp", "type": "main", "index": 0 } ],
+        [ { "node": "Lead ignorado (score baixo)", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "settings": { "timezone": "America/Sao_Paulo" },
+  "staticData": null,
+  "tags": ["linkedin", "scraping"]
+}

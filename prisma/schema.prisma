@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  new
+  validated
+  contacted
+  responded
+  converted
+  unqualified
+  opt_out
+}
+
+enum CampaignStatus {
+  draft
+  active
+  paused
+  completed
+  cancelled
+}
+
+enum MessageStatus {
+  pending
+  sent
+  delivered
+  read
+  failed
+}
+
+enum CampaignLeadStatus {
+  pending
+  scheduled
+  sent
+  failed
+  opted_out
+}
+
+enum SessionStatus {
+  connecting
+  connected
+  disconnected
+  error
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  nome      String
+  slug      String   @unique
+  active    Boolean  @default(true)
+  config    Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  leads     Lead[]
+  campanhas Campaign[]
+  templates Template[]
+  apiKeys   ApiKey[]
+  users     User[]
+
+  @@map("tenants")
+}
+
+model Lead {
+  id        String      @id @default(cuid())
+  tenantId  String      @map("tenant_id")
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  nome      String?
+  empresa   String?
+  cargo     String?
+  telefone  String?
+  whatsapp  String?
+  email     String?
+  linkedin  String?
+  website   String?
+  endereco  String?
+  origem    String?
+  score     Int         @default(0)
+  status    LeadStatus  @default(new)
+  consentimento ConsentLog[]
+  mensagens  Message[]
+  conversoes Conversao[]
+  campanhas  CampaignLead[]
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("leads")
+}
+
+model ConsentLog {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id")
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  tipo      String
+  descricao String?
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("consent_logs")
+}
+
+model Campaign {
+  id         String         @id @default(cuid())
+  tenantId   String         @map("tenant_id")
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  nome       String
+  templateId String?        @map("template_id")
+  template   Template?      @relation(fields: [templateId], references: [id])
+  status     CampaignStatus @default(draft)
+  config     Json?
+  mensagens  Message[]
+  leads      CampaignLead[]
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("campanhas")
+}
+
+model CampaignLead {
+  leadId     String             @map("lead_id")
+  campaignId String             @map("campanha_id")
+  status     CampaignLeadStatus @default(pending)
+  scheduledAt DateTime?         @map("scheduled_at")
+  sentAt     DateTime?          @map("sent_at")
+  erro       String?
+  lead       Lead               @relation(fields: [leadId], references: [id])
+  campaign   Campaign           @relation(fields: [campaignId], references: [id])
+
+  @@id([leadId, campaignId])
+  @@map("campanhas_leads")
+}
+
+model Message {
+  id         String        @id @default(cuid())
+  tenantId   String        @map("tenant_id")
+  leadId     String        @map("lead_id")
+  campanhaId String?       @map("campanha_id")
+  conteudo   String
+  status     MessageStatus @default(pending)
+  enviadaEm  DateTime?     @map("enviada_em")
+  lidaEm     DateTime?     @map("lida_em")
+  erro       String?
+  lead       Lead          @relation(fields: [leadId], references: [id])
+  campanha   Campaign?     @relation(fields: [campanhaId], references: [id])
+
+  @@index([tenantId])
+  @@map("mensagens")
+}
+
+model Conversao {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id")
+  valor     Float
+  data      DateTime @default(now())
+  descricao String?
+  lead      Lead     @relation(fields: [leadId], references: [id])
+
+  @@map("conversoes")
+}
+
+model Template {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  nome      String
+  conteudo  String
+  variaveis String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  campanhas Campaign[]
+
+  @@index([tenantId])
+  @@map("templates")
+}
+
+model WhatsAppSession {
+  id          String        @id @default(cuid())
+  sessionName String        @unique @map("session_name")
+  phone       String?
+  status      SessionStatus @default(disconnected)
+  qrcode      String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("whatsapp_sessions")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         String   @default("admin")
+  active       Boolean  @default(true)
+  tenantId     String   @map("tenant_id")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  key       String   @unique
+  prefix    String
+  active    Boolean  @default(true)
+  lastUsed  DateTime? @map("last_used")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("api_keys")
+}

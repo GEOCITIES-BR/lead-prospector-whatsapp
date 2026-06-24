@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.git/
+coverage/
+logs/
+tmp/
+.vscode/
+.idea/
+*.md
+.env*
+!*.example
+**/__pycache__/
+**/*.log
+docker/data/
+n8n/data/

@@ -1,0 +1,88 @@
+name: lead-prospector-dev
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: lead-prospector-app
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/lead_prospector
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      WAHA_API_URL: http://waha:3002
+      LOG_LEVEL: debug
+      LOG_PRETTY: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npx tsx watch src/api/server.ts
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: lead-prospector-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lead_prospector
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: lead-prospector-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  waha:
+    image: devlike/whatsapp-http-api:latest
+    container_name: lead-prospector-waha
+    ports:
+      - '3002:3002'
+    environment:
+      WHATSAPP_API_KEY: dev-key
+    volumes:
+      - waha_data:/app/.sections
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    container_name: lead-prospector-web
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    depends_on:
+      - app
+    environment:
+      VITE_API_URL: http://localhost:3000
+
+volumes:
+  postgres_data:
+  redis_data:
+  waha_data:
