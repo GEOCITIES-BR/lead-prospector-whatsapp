@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { LinkedInScraper } from '../../src/modules/scraping/linkedin/linkedin.scraper.js';
 
 describe('LinkedInScraper', () => {

@@ -113,6 +113,22 @@ services:
         max-size: '10m'
         max-file: '3'
 
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile.prod
+    container_name: lead-prospector-web
+    ports:
+      - '80:80'
+    depends_on:
+      - app
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
 volumes:
   postgres_data:
     driver: local

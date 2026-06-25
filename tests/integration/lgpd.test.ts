@@ -22,7 +22,7 @@ describe('LGPD (integration)', () => {
     const prisma = getTestPrisma();
 
     const lead = await prisma.lead.create({
-      data: { nome: 'Test', telefone: '5511999999999' },
+      data: { tenantId: 'default', nome: 'Test', telefone: '5511999999999' },
     });
 
     const response = await app.inject({

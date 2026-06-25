@@ -80,7 +80,7 @@ services:
     depends_on:
       - app
     environment:
-      VITE_API_URL: http://localhost:3000
+      VITE_PROXY_TARGET: http://app:3000
 
 volumes:
   postgres_data:

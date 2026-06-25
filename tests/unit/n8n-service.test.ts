@@ -152,7 +152,7 @@ describe('N8nService', () => {
 
       const result = await service.handleEnrichLead({ leadId: 'l1' });
       expect(result.success).toBe(true);
-      expect(result.data.score).toBe(85);
+      expect(result.data!.score).toBe(85);
     });
 
     it('should reject missing leadId', async () => {

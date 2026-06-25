@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LeadScorer } from '../../src/modules/enrichment/lead-scorer.js';
-import {
-  EnrichmentLead,
-  ValidationResult,
-  DEFAULT_SCORE_CONFIG,
-} from '../../src/modules/enrichment/enrichment.types.js';
+import { EnrichmentLead, ValidationResult } from '../../src/modules/enrichment/enrichment.types.js';
 
 const scorer = new LeadScorer();
 

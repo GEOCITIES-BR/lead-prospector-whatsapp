@@ -173,9 +173,9 @@ export class GoogleBusinessScraper implements Scraper<
 
   private async autoScroll(page: Page): Promise<void> {
     const scrollFn = (): Promise<void> => {
-      // @ts-expect-error - DOM apis available in Puppeteer browser context
       const scrollContainer: { scrollTop: number; scrollHeight: number } =
-        document.querySelector('[role="feed"]') || document.body;
+        (globalThis as any).document.querySelector('[role="feed"]') ||
+        (globalThis as any).document.body;
       let prevHeight = 0;
       const maxScrolls = 10;
       return new Promise((resolve) => {

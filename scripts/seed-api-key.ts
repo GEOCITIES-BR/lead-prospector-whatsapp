@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   const apiKey = await prisma.apiKey.upsert({
     where: { key },
     update: { name, active: true, lastUsed: now },
-    create: { name, key, prefix, active: true, lastUsed: now },
+    create: { tenantId: 'default', name, key, prefix, active: true, lastUsed: now },
   });
 
   console.log(`API key cadastrada: ${apiKey.prefix}... (name: ${apiKey.name})`);
